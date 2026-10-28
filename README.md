@@ -16,12 +16,16 @@ bought on the App Store with your own Apple account.
   [unfairplay](https://github.com/DrWhax/unfairplay)
 - Xcode 26 to build
 
-## Usage
+## Install
 
-```sh
-scripts/build-app.sh
-open dist/Blockport.app
-```
+Download the `.dmg` from the [releases](https://github.com/sowahq/Blockport/releases)
+and drag Blockport to Applications. The app is signed ad hoc, so macOS blocks
+the first launch: open System Settings, Privacy & Security, and click Open
+Anyway.
+
+To build it yourself, run `scripts/build-app.sh` and open `dist/Blockport.app`.
+
+## Usage
 
 Drop the IPA on the window, then press Play. The game is installed in
 `~/Library/Application Support/Blockport`, its data in `GameData` next to it,
@@ -54,7 +58,10 @@ Objective-C methods through the runtime:
 swift test
 scripts/build-catalyst.sh   # runtime only
 scripts/build-app.sh        # dist/Blockport.app
+scripts/build-dmg.sh        # dist/Blockport-<version>.dmg
 ```
+
+Pushing a `v*` tag builds the disk image and publishes a release.
 
 Set `BLOCKPORT_TRACE=1` to log the runtime's decisions in the game log.
 

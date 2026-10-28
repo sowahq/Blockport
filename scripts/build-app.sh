@@ -2,6 +2,7 @@
 set -eu
 
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+version="${BLOCKPORT_VERSION:-0.1.0}"
 cd "$(dirname "$0")/.."
 
 runtime_dir="$(scripts/build-catalyst.sh BlockportRuntime release | tail -1)"
@@ -28,7 +29,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>CFBundleIdentifier</key><string>dev.blockport.launcher</string>
     <key>CFBundleName</key><string>Blockport</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1.0</string>
+    <key>CFBundleShortVersionString</key><string>$version</string>
     <key>CFBundleVersion</key><string>1</string>
     <key>LSMinimumSystemVersion</key><string>15.0</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.games</string>
