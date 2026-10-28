@@ -2,9 +2,9 @@
 
 Blockport runs the iOS version of Minecraft Bedrock natively on Apple Silicon
 Macs. It converts your own copy of the game into a Mac Catalyst app and loads a
-small runtime that supplies what an iOS game expects but a Mac does not
-provide. There is no emulator, virtual machine or Rosetta: the game's arm64 code
-runs on the CPU and renders with Metal on the GPU.
+small runtime that patches the iPad behaviour the game relies on. The game's
+arm64 code runs directly on the CPU and renders with Metal, without an
+emulator, a virtual machine or Rosetta.
 
 Blockport is not affiliated with Mojang or Microsoft and contains no game files.
 You need a copy of Minecraft bought on the App Store with your own Apple
@@ -17,8 +17,6 @@ account.
   - download it with [ipatool](https://github.com/majd/ipatool);
   - decrypt it on your Mac with [unfairplay](https://github.com/DrWhax/unfairplay).
 - To build from source: Xcode 26.
-
-Do not share the IPA or the converted app. Each player needs their own copy.
 
 ## Usage
 
@@ -40,18 +38,16 @@ English, French, German and Spanish.
 
 ## Approach
 
-An Apple Silicon Mac can execute iOS arm64 code, and macOS ships the iOS
-frameworks for Mac Catalyst. What stands between a decrypted iOS game and a
-working Mac app is a set of assumptions the game makes about its platform. Each
-section below describes one of them, why it breaks on a Mac, and what Blockport
-does about it. The fixes were found by running the game, tracing what failed,
-and testing each change against the real game.
+An Apple Silicon Mac can run iOS arm64 code, and macOS ships the iOS frameworks
+for Mac Catalyst. The game still assumes it runs on an iPad, and several of
+those assumptions break on a Mac. Every fix below came from running the game,
+tracing what failed and testing the change in the game itself.
 
 ### 1. Getting the binary to run
 
-macOS only runs iOS apps installed from the App Store and signed by Apple. A
-re-signed iOS binary is refused. The installer therefore declares every binary
-in the bundle as Mac Catalyst instead of iOS:
+macOS only runs iOS apps installed from the App Store and signed by Apple. It
+refuses a re-signed iOS binary, so the installer declares every binary in the
+bundle as Mac Catalyst instead:
 
 - It rewrites the platform in the `LC_BUILD_VERSION` load command (from iOS, 2,
   to Mac Catalyst, 6). Two frameworks still use the older
@@ -83,11 +79,11 @@ an entitlement tied to a developer Team ID. A locally signed app has none, so
 every call fails with `errSecMissingEntitlement` and the game crashes at launch
 ("Couldn't add the Keychain Item").
 
-Redirecting the calls to the login keychain does not work: under Catalyst,
+Pointing the calls at the login keychain does not help, because under Catalyst
 `SecItem*` targets the data protection keychain whatever the query says. The
-older file-based `SecKeychain*` API still works from a Catalyst process. The
-runtime therefore answers `SecItemAdd`, `SecItemCopyMatching`, `SecItemUpdate`
-and `SecItemDelete` itself:
+older file-based `SecKeychain*` API still works from a Catalyst process, so the
+runtime answers `SecItemAdd`, `SecItemCopyMatching`, `SecItemUpdate` and
+`SecItemDelete` itself:
 
 - Generic passwords and keys are held in memory, in a vault saved as a single
   encrypted item of the login keychain. One item means macOS asks at most once
@@ -110,12 +106,11 @@ game renders at the display's pixels. It also clears `UIRequiresFullScreen` and
 declares every orientation, without which Catalyst keeps the window at a fixed
 iPad size.
 
-The game reads the screen size once, at launch, and never again: an iPad's
-screen does not change size. When the window is resized, the engine keeps
-rendering at its original size, which letterboxes the picture and offsets the
-mouse. Blockport therefore gives the game a fixed
-screen from launch, by default the display's full-screen area, and its view
-keeps that size. A scale transform fits the view to the window. UIKit maps
+The game reads the screen size once at launch, because an iPad's screen never
+changes size. When the window is resized, the engine keeps rendering at its
+original size, which letterboxes the picture and offsets the mouse. Blockport
+gives the game a fixed screen from launch, by default the display's full-screen
+area, and its view keeps that size. A scale transform fits the view to the window. UIKit maps
 pointer locations through the transform, so input stays aligned, and MetalKit
 never sees the view change size. The window keeps the game's aspect ratio.
 
